@@ -28,12 +28,12 @@ jobs:
   update-version-and-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5.0.0
+      - uses: actions/checkout@v6.0.0
         with:
           fetch-depth: 0
           token: ${{ secrets.PAT_FOR_PUSHES }}
       - name: Set up Python
-        uses: actions/setup-python@v6.0.0
+        uses: actions/setup-python@v6.1.0
         with:
           python-version: '3.13'
       - name: Install poetry
@@ -71,7 +71,7 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - name: Create Release
-        uses: softprops/action-gh-release@v2.4.2
+        uses: softprops/action-gh-release@v2.5.0
         with:
           tag_name: v${{ steps.update_version.outputs.new_version }}
           name: json2vars-setter-v${{ steps.update_version.outputs.new_version }}
