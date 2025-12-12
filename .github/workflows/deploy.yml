@@ -18,7 +18,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5.0.0
+      - uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
       - name: Set variables from JSON
@@ -30,13 +30,13 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 33836132+github-actions[bot]@users.noreply.github.com
-      - uses: actions/setup-python@v6.0.0
+      - uses: actions/setup-python@v6.1.0
         with:
           python-version: ${{ fromJson(steps.json2vars.outputs.versions_python)[0] }}
       - run: echo "cache_id=$(date --utc '+%V')" >> "$GITHUB_ENV"
       - name: Create cache directory
         run: mkdir -p .cache
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         with:
           key: mkdocs-material-${{ env.cache_id }}
           path: .cache
