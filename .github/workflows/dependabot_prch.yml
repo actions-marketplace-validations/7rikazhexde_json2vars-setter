@@ -35,7 +35,7 @@ jobs:
       ghpages_branch: ${{ steps.json2vars.outputs.ghpages_branch }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v6.0.1
         with:
           fetch-depth: 0
 
@@ -71,9 +71,9 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5.0.0
+      - uses: actions/checkout@v6.0.1
       - name: Set up Python
-        uses: actions/setup-python@v6.0.0
+        uses: actions/setup-python@v6.1.0
         with:
           python-version: ${{matrix.python-version}}
       - name: Set timezone
@@ -91,7 +91,7 @@ jobs:
       - name: Install poetry
         run: pip install poetry
       - name: Cache dependencies
-        uses: actions/cache@v4.2.2
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pypoetry
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
@@ -120,7 +120,7 @@ jobs:
           fi
       - name: Pytest coverage comment
         id: coverageComment
-        uses: MishaKav/pytest-coverage-comment@v1.1.59
+        uses: MishaKav/pytest-coverage-comment@v1.2.0
         with:
           pytest-coverage-path: ./pytest-coverage.txt
           pytest-xml-coverage-path: ./coverage.xml
