@@ -19,7 +19,6 @@ repos:
       - id: check-toml
       # yaml syntax check
       - id: check-yaml
-        exclude: '^mkdocs\.yml$'
 
   # https://github.com/shellcheck-py/shellcheck-py?tab=readme-ov-file#usage
   - repo: https://github.com/shellcheck-py/shellcheck-py
@@ -28,14 +27,14 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.10
+    rev: v1.7.11
     hooks:
       - id: actionlint
 
   # https://python-poetry.org/docs/pre-commit-hooks/#usage
   - repo: https://github.com/python-poetry/poetry
     # Cannot be executed with local designation (as of 24.8.3)
-    rev: 2.3.1
+    rev: 2.3.2
     hooks:
       - id: poetry-check
         verbose: true
@@ -65,13 +64,13 @@ repos:
   # Reference: https://github.com/DavidAnson/markdownlint-cli2#overview
   # > markdownlint-cli is a traditional command-line interface for markdownlint.
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
+    rev: v0.48.0
     hooks:
       - id: markdownlint
         args: ["--config", ".markdownlint.jsonc", "README.md"]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.14.14
+    rev: v0.15.8
     hooks:
       - id: ruff
         args: ["--fix","json2vars_setter"]
