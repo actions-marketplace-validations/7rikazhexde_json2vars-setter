@@ -17,13 +17,13 @@ jobs:
       ghpages_branch: ${{ steps.json2vars.outputs.ghpages_branch }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
 
       - name: Set variables from JSON
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.2.0
         with:
           json-file: examples/ruby/ruby_project_matrix.json
 
@@ -59,12 +59,12 @@ jobs:
       test_status: ${{ steps.set_status.outputs.status }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6.0.3
         with:
           fetch-depth: 0
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1.295.0
+        uses: ruby/setup-ruby@v1.310.0
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
@@ -181,7 +181,7 @@ jobs:
           fi
 
       - name: Create badge
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.8.0
         with:
           auth: ${{ secrets.GIST_TOKEN }}
           gistID: 511ba5b5711e66c507292ba00cf0a219
