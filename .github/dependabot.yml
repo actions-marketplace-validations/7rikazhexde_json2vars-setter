@@ -1,58 +1,338 @@
 version: 2
+
+# Update policy
+# - The shipped Python package (pip) and GitHub Actions are updated daily,
+#   including major versions, so the action itself stays current and secure.
+# - The language examples (npm / bundler / gomod / cargo / composer / nuget /
+#   maven / pub / swift) are demos. They are
+#   updated weekly and **major-version bumps are ignored**, because a major bump
+#   can raise a dependency's required language runtime above what the example
+#   test matrix covers (e.g. parallel 1.x -> 2.1.0 requiring Ruby >= 3.3; see
+#   issues #482 / #484). Bump example majors intentionally alongside a matrix
+#   review instead of automatically.
+#
+# Merge-safety gate (a green test run is necessary but NOT sufficient):
+# - `cooldown` (below) delays every bump until the release has been public for a
+#   few days, so a freshly-published / compromised version is not pulled instantly.
+# - `dependency-review.yml` fails any PR that introduces a vulnerable dependency.
+# - `dependabot-metadata.yml` labels each PR by semver bump so the risk is obvious.
+# - Merging stays MANUAL (auto-merge is disabled); `dependabot-auto-rebase.yml` only
+#   rebases open PRs so they stay mergeable, it never merges them.
 updates:
-  # Python dependencies
+  # Python dependencies (shipped package)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "daily"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
     groups:
       dependencies:
         patterns:
           - "*"
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
     open-pull-requests-limit: 10
 
-  # Node.js dependencies
+  # Node.js dependencies (example)
   - package-ecosystem: "npm"
     directory: "/examples/nodejs"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
     groups:
       dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
     open-pull-requests-limit: 10
 
-  # Ruby dependencies
+  # Ruby dependencies (example)
   - package-ecosystem: "bundler"
     directory: "/examples/ruby"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
     groups:
       dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
     open-pull-requests-limit: 10
 
-  # Go dependencies
+  # Go dependencies (example)
   - package-ecosystem: "gomod"
     directory: "/examples/go"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
     groups:
       dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
     open-pull-requests-limit: 10
 
-  # Rust dependencies
+  # Rust dependencies (example)
   - package-ecosystem: "cargo"
     directory: "/examples/rust"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
     groups:
       dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
+    open-pull-requests-limit: 10
+
+  # PHP dependencies (example)
+  - package-ecosystem: "composer"
+    directory: "/examples/php"
+    schedule:
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
+    open-pull-requests-limit: 10
+
+  # .NET (C#) dependencies (example)
+  - package-ecosystem: "nuget"
+    directory: "/examples/dotnet"
+    schedule:
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
+    open-pull-requests-limit: 10
+
+  # Java dependencies (example)
+  - package-ecosystem: "maven"
+    directory: "/examples/java"
+    schedule:
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
+    open-pull-requests-limit: 10
+
+  # Dart dependencies (example)
+  - package-ecosystem: "pub"
+    directory: "/examples/dart"
+    schedule:
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
+    open-pull-requests-limit: 10
+
+  # Flutter dependencies (example)
+  - package-ecosystem: "pub"
+    directory: "/examples/flutter"
+    schedule:
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
+    open-pull-requests-limit: 10
+
+  # Swift dependencies (example)
+  - package-ecosystem: "swift"
+    directory: "/examples/swift"
+    schedule:
+      interval: "weekly"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. Longer window for higher-impact bumps.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
     open-pull-requests-limit: 10
 
   # GitHub Actions
@@ -60,8 +340,37 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    # Wait until a release has been public for a few days before proposing it,
+    # so a freshly-published (possibly compromised) version is not pulled the
+    # instant it ships. NOTE: the github-actions ecosystem does NOT support the
+    # semver-*-days granularity (Dependabot rejects them here), so only the flat
+    # default-days window applies.
+    cooldown:
+      default-days: 5
     groups:
       dependencies:
         patterns:
           - "*"
+    ignore:
+      # swift-actions/setup-swift v3 is currently only a pre-release
+      # (v3.0.0-beta.1). Its Linux path switched to the Swiftly installer,
+      # which fails GPG signature verification on the runner
+      # ("gpg: Can't check signature: No public key" —
+      # swift-actions/setup-swift#798, still open). The moving `v3` tag points
+      # at that beta, so Dependabot proposes it as if it were a stable major
+      # (see the closed PRs #523/#527). A `versions: ["3.x"]` constraint does
+      # NOT catch a moving major tag (Dependabot reports the bump target as
+      # bare `3`, which a semver-wildcard range fails to match), so block it by
+      # update-type instead: ignore every major bump of this action. Remove
+      # this once a fixed swift-actions/setup-swift v3 is released as GA and
+      # bump the major intentionally.
+      - dependency-name: "swift-actions/setup-swift"
+        update-types: ["version-update:semver-major"]
+    # Gitmoji prefix so semantic-release-gitmoji recognises Dependabot bumps:
+    # without a gitmoji the commit is dropped from the generated release notes
+    # (it has no group). ":arrow_up:" is already a patch rule in .releaserc.cjs,
+    # so bumps land under the release notes' Dependencies section and a bump-only
+    # batch yields a patch release.
+    commit-message:
+      prefix: ":arrow_up:"
     open-pull-requests-limit: 10

@@ -33,7 +33,7 @@ graph TD
     class E api
 ```
 
-### 1. JSON to Variables Parser (`json_to_github_output.py`)
+### 1. JSON to Variables Parser (`github_output.py`)
 
 The core component of the action. It reads a JSON configuration file and converts its contents into GitHub Actions output variables that can be used in your workflows.
 
@@ -46,7 +46,7 @@ The core component of the action. It reads a JSON configuration file and convert
 
 [Learn more about JSON to Variables](json-to-variables.md)
 
-### 2. Dynamic Matrix Updater (`update_matrix_dynamic.py`)
+### 2. Dynamic Matrix Updater (`matrix_update.py`)
 
 Automatically updates your matrix configuration with the latest or stable language versions from official sources.
 
@@ -59,7 +59,7 @@ Automatically updates your matrix configuration with the latest or stable langua
 
 [Learn more about Dynamic Updates](dynamic-update.md)
 
-### 3. Version Cache Manager (`cache_version_info.py`)
+### 3. Version Cache Manager (`version_cache.py`)
 
 Manages version information cache to optimize API usage and workflow performance.
 
@@ -79,12 +79,12 @@ The components of json2vars-setter can be used independently or in combination:
 
 ```mermaid
 graph LR
-    A[Manual Configuration] -->|Option 1| D[json_to_github_output.py]
+    A[Manual Configuration] -->|Option 1| D[github_output.py]
 
-    B[Dynamic Update] -->|Option 2| C[update_matrix_dynamic.py]
+    B[Dynamic Update] -->|Option 2| C[matrix_update.py]
     C -->|Updates| D
 
-    E[Cached Versions] -->|Option 3| F[cache_version_info.py]
+    E[Cached Versions] -->|Option 3| F[version_cache.py]
     F -->|Generates| D
 
     D -->|Sets| G[GitHub Outputs]
@@ -109,7 +109,7 @@ graph LR
 - **Automated Version Updates**: Keep testing matrices current without manual intervention
 - **Efficient API Usage**: Reduce external API calls by caching version information
 - **Cross-Platform Testing**: Define operating systems and language versions for comprehensive testing
-- **Multi-Language Projects**: Support for Python, Ruby, Node.js, Go, and Rust in a single configuration
+- **Multi-Language Projects**: Support for Python, Ruby, Node.js, Go, Rust, PHP, .NET (C#), Java, Deno, Bun, Zig, Elixir, Dart, and Swift in a single configuration
 
 ## Component Integration
 
@@ -120,7 +120,7 @@ The flexibility of json2vars-setter allows you to choose the components that bes
 ```yaml
 - name: Set variables from JSON
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
 ```
@@ -129,7 +129,7 @@ The flexibility of json2vars-setter allows you to choose the components that bes
 
 ```yaml
 - name: Update matrix with latest versions
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
@@ -141,7 +141,7 @@ The flexibility of json2vars-setter allows you to choose the components that bes
 
 ```yaml
 - name: Update using cached version info
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     use-cache: 'true'

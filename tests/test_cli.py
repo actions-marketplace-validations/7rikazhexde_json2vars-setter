@@ -2,204 +2,245 @@
 Tests for json2vars_setter.cli
 """
 
-import subprocess
-import sys
-from typing import Any, List
+from typing import cast
 
-from pytest import MonkeyPatch
-from typer.testing import CliRunner
+import click
+import pytest
+from click.testing import CliRunner
+from pytest_mock import MockerFixture
 
-from json2vars_setter.cli import app
+from json2vars_setter.cli import app as _typer_group
+
+# `app` is a Typer/Click group at runtime; cast it to ``click.Group`` so the
+# stdlib-style ``click.testing.CliRunner`` and ``.commands`` access type-check.
+app = cast("click.Group", _typer_group)
+
+runner = CliRunner()
 
 
 def test_usage_command() -> None:
-    """Test for the usage command"""
-    # Set up the runner for CLI tests
-    runner = CliRunner()
-
-    # Execute the usage command
+    """The usage command prints a task-oriented goal->command guide"""
     result = runner.invoke(app, ["usage"])
 
-    # Test verification
     assert result.exit_code == 0
 
-    # Verify the output content
-    assert "json2vars_setter Usage Examples" in result.stdout
-    assert "Available commands:" in result.stdout
-    assert "cache-version" in result.stdout
+    # Task-oriented headings and the commands they map to
+    assert "what do you want to do?" in result.stdout
+    assert "json2vars update-matrix --all latest" in result.stdout
+    assert "json2vars cache-version" in result.stdout
+    assert "json2vars parse" in result.stdout
+    assert "GITHUB_OUTPUT" in result.stdout
+    # Discoverability of shell completion (bash / PowerShell)
+    assert "json2vars --install-completion" in result.stdout
+
+
+def test_no_args_shows_help() -> None:
+    """Running with no command shows the help/command list, not just an error"""
+    result = runner.invoke(app, [])
+
+    # no_args_is_help renders the full help (Usage + Commands). Click uses
+    # exit code 2 for a missing command; the point is the guidance is shown.
+    assert result.exit_code == 2
+    assert "Usage" in result.stdout
     assert "update-matrix" in result.stdout
-    assert "usage" in result.stdout
-
-    # Verify examples
-    assert "Cache Version Information:" in result.stdout
-    assert "Update Matrix:" in result.stdout
+    assert "cache-version" in result.stdout
+    assert "parse" in result.stdout
 
 
-def test_cache_version_command(monkeypatch: MonkeyPatch) -> None:
-    """Test for the cache-version command"""
+def test_version_option() -> None:
+    """--version prints the installed package version and exits 0"""
+    result = runner.invoke(app, ["--version"])
 
-    # Mock subprocess.run and sys.exit
-    def mock_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
-        return subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout="", stderr=""
-        )
-
-    exit_code: int = 0
-
-    def mock_exit(code: int = 0) -> None:
-        nonlocal exit_code
-        exit_code = code
-
-    monkeypatch.setattr(subprocess, "run", mock_run)
-    monkeypatch.setattr(sys, "exit", mock_exit)
-
-    # Set up the runner for CLI tests
-    runner = CliRunner()
-
-    # Execute the command
-    result = runner.invoke(app, ["cache-version"])
-
-    # Verification
     assert result.exit_code == 0
-    assert exit_code == 0
+    assert "json2vars-setter" in result.stdout
 
 
-def test_cache_version_with_help(monkeypatch: MonkeyPatch) -> None:
-    """Test for the cache-version command with help option"""
+def test_parse_forwards_file_and_debug(mocker: MockerFixture) -> None:
+    """parse forwards the JSON path (and --debug) to github_output.main in-process"""
+    mock_main = mocker.patch("json2vars_setter.cli.github_output.main")
 
-    # Mock subprocess.run and sys.exit
-    def mock_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
-        return subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout="", stderr=""
-        )
+    result = runner.invoke(app, ["parse", "matrix.json", "--debug"])
 
-    exit_code: int = 0
-
-    def mock_exit(code: int = 0) -> None:
-        nonlocal exit_code
-        exit_code = code
-
-    monkeypatch.setattr(subprocess, "run", mock_run)
-    monkeypatch.setattr(sys, "exit", mock_exit)
-
-    # Set up the runner for CLI tests
-    runner = CliRunner()
-
-    # Execute the command (with help flag)
-    result = runner.invoke(app, ["cache-version", "--help"])
-
-    # Verification
     assert result.exit_code == 0
-    assert exit_code == 0
+    mock_main.assert_called_once_with(["matrix.json", "--debug"])
 
 
-def test_cache_version_error(monkeypatch: MonkeyPatch) -> None:
-    """Test for error case of the cache-version command"""
-    # Mock subprocess.run to raise an error
-    exit_calls: List[int] = []
+def test_parse_without_debug(mocker: MockerFixture) -> None:
+    """parse omits --debug when the flag is not given"""
+    mock_main = mocker.patch("json2vars_setter.cli.github_output.main")
 
-    def mock_run_error(*args: Any, **kwargs: Any) -> None:
-        raise subprocess.CalledProcessError(1, "mock command")
+    result = runner.invoke(app, ["parse", "matrix.json"])
 
-    def mock_exit(code: int = 0) -> None:
-        exit_calls.append(code)
-
-    monkeypatch.setattr(subprocess, "run", mock_run_error)
-    monkeypatch.setattr(sys, "exit", mock_exit)
-
-    # Set up the runner for CLI tests
-    runner = CliRunner()
-
-    # Execute the command
-    result = runner.invoke(app, ["cache-version"], catch_exceptions=False)
-
-    # Verification
-    assert "Error:" in result.stdout
-    # Verify that sys.exit was called with the appropriate code
-    assert len(exit_calls) > 0
-    assert 1 in exit_calls  # At least one call with code 1
+    assert result.exit_code == 0
+    mock_main.assert_called_once_with(["matrix.json"])
 
 
-def test_update_matrix_command(monkeypatch: MonkeyPatch) -> None:
-    """Test for the update-matrix command"""
+def test_cache_version_bridges_options(mocker: MockerFixture) -> None:
+    """cache-version reconstructs an argv list for version_cache.main"""
+    mock_main = mocker.patch("json2vars_setter.cli.version_cache.main")
 
-    # Mock subprocess.run and sys.exit
-    def mock_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
-        return subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout="", stderr=""
-        )
+    result = runner.invoke(app, ["cache-version", "--languages", "python", "--force"])
 
-    exit_code: int = 0
+    assert result.exit_code == 0
+    mock_main.assert_called_once_with(["--languages", "python", "--force"])
 
-    def mock_exit(code: int = 0) -> None:
-        nonlocal exit_code
-        exit_code = code
 
-    monkeypatch.setattr(subprocess, "run", mock_run)
-    monkeypatch.setattr(sys, "exit", mock_exit)
+def test_cache_version_repeated_languages_and_typed_options(
+    mocker: MockerFixture,
+) -> None:
+    """Repeated --languages collapses to one flag; int/Path options round-trip"""
+    mock_main = mocker.patch("json2vars_setter.cli.version_cache.main")
 
-    # Set up the runner for CLI tests
-    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        [
+            "cache-version",
+            "--languages",
+            "python",
+            "--languages",
+            "nodejs",
+            "--max-age",
+            "7",
+            "--cache-file",
+            "cache.json",
+            "--template-only",
+        ],
+    )
 
-    # Execute the command
+    assert result.exit_code == 0
+    mock_main.assert_called_once_with(
+        [
+            "--languages",
+            "python",
+            "nodejs",
+            "--max-age",
+            "7",
+            "--cache-file",
+            "cache.json",
+            "--template-only",
+        ]
+    )
+
+
+def test_update_matrix_bridges_options(mocker: MockerFixture) -> None:
+    """update-matrix reconstructs an argv list for matrix_update.main"""
+    mock_main = mocker.patch("json2vars_setter.cli.matrix_update.main")
+
+    result = runner.invoke(app, ["update-matrix", "--all", "latest", "--dry-run"])
+
+    assert result.exit_code == 0
+    mock_main.assert_called_once_with(["--all", "latest", "--dry-run"])
+
+
+def test_update_matrix_no_options_yields_empty_argv(mocker: MockerFixture) -> None:
+    """With no options set, the reconstructed argv is empty"""
+    mock_main = mocker.patch("json2vars_setter.cli.matrix_update.main")
+
     result = runner.invoke(app, ["update-matrix"])
 
-    # Verification
     assert result.exit_code == 0
-    assert exit_code == 0
+    mock_main.assert_called_once_with([])
 
 
-def test_update_matrix_with_help(monkeypatch: MonkeyPatch) -> None:
-    """Test for the update-matrix command with help option"""
+def test_completion_exposes_options() -> None:
+    """The bridged commands expose their argparse options as Click params"""
+    cache = app.commands["cache-version"]
+    names = {opt for p in cache.params for opt in p.opts}
+    assert {"--languages", "--max-age", "--cache-file", "--template-only"} <= names
 
-    # Mock subprocess.run and sys.exit
-    def mock_run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
-        return subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout="", stderr=""
-        )
+    matrix = app.commands["update-matrix"]
+    matrix_names = {opt for p in matrix.params for opt in p.opts}
+    assert {"--python", "--all", "--dry-run"} <= matrix_names
 
-    exit_code: int = 0
 
-    def mock_exit(code: int = 0) -> None:
-        nonlocal exit_code
-        exit_code = code
+def test_option_values_complete() -> None:
+    """Choice-valued options complete their values (not just the option names).
 
-    monkeypatch.setattr(subprocess, "run", mock_run)
-    monkeypatch.setattr(sys, "exit", mock_exit)
+    This is the behaviour the argparse->Typer bridge exists for: building the
+    bridged params as ``TyperOption`` with a ``shell_complete`` callback lets
+    ``--languages <TAB>`` / ``--python <TAB>`` offer their choices. (Plain
+    ``click.Option`` params complete option *names* but never their values.)
+    """
+    from typer._completion_classes import PowerShellComplete
 
-    # Set up the runner for CLI tests
-    runner = CliRunner()
+    completer = PowerShellComplete(_typer_group, {}, "json2vars", "_JSON2VARS_COMPLETE")
 
-    # Execute the command (with help flag)
-    result = runner.invoke(app, ["update-matrix", "--help"])
+    # cache-version --languages -> the supported languages (+ "all")
+    langs = [
+        item.value
+        for item in completer.get_completions(["cache-version", "--languages"], "")
+    ]
+    assert "python" in langs
+    assert "all" in langs
+    # prefix filtering works
+    py = [
+        item.value
+        for item in completer.get_completions(["cache-version", "--languages"], "py")
+    ]
+    assert py == ["python"]
 
-    # Verification
+    # update-matrix --python -> stable/latest/both
+    strategies = [
+        item.value
+        for item in completer.get_completions(["update-matrix", "--python"], "")
+    ]
+    assert set(strategies) == {"stable", "latest", "both"}
+
+
+def test_systemexit_zero_returns_zero(mocker: MockerFixture) -> None:
+    """A SystemExit with code 0 from the feature main is treated as success"""
+    mocker.patch("json2vars_setter.cli.version_cache.main", side_effect=SystemExit(0))
+
+    result = runner.invoke(app, ["cache-version", "--template-only"])
+
     assert result.exit_code == 0
-    assert exit_code == 0
 
 
-def test_update_matrix_error(monkeypatch: MonkeyPatch) -> None:
-    """Test for error case of the update-matrix command"""
-    # Mock subprocess.run to raise an error
-    exit_calls: List[int] = []
+def test_systemexit_none_returns_zero(mocker: MockerFixture) -> None:
+    """A SystemExit with code None is treated as success"""
+    mocker.patch(
+        "json2vars_setter.cli.version_cache.main", side_effect=SystemExit(None)
+    )
 
-    def mock_run_error(*args: Any, **kwargs: Any) -> None:
-        raise subprocess.CalledProcessError(1, "mock command")
+    result = runner.invoke(app, ["cache-version"])
 
-    def mock_exit(code: int = 0) -> None:
-        exit_calls.append(code)
+    assert result.exit_code == 0
 
-    monkeypatch.setattr(subprocess, "run", mock_run_error)
-    monkeypatch.setattr(sys, "exit", mock_exit)
 
-    # Set up the runner for CLI tests
-    runner = CliRunner()
+def test_systemexit_nonzero_propagates_code(mocker: MockerFixture) -> None:
+    """A non-zero integer SystemExit (argparse usage error) propagates the code"""
+    mocker.patch("json2vars_setter.cli.matrix_update.main", side_effect=SystemExit(2))
 
-    # Execute the command
-    result = runner.invoke(app, ["update-matrix"], catch_exceptions=False)
+    result = runner.invoke(app, ["update-matrix"])
 
-    # Verification
-    assert "Error:" in result.stdout
-    # Verify that sys.exit was called with the appropriate code
-    assert len(exit_calls) > 0
-    assert 1 in exit_calls  # At least one call with code 1
+    assert result.exit_code == 2
+
+
+def test_systemexit_non_integer_code_maps_to_one(mocker: MockerFixture) -> None:
+    """A SystemExit with a non-integer code maps to exit code 1"""
+    mocker.patch(
+        "json2vars_setter.cli.version_cache.main", side_effect=SystemExit("boom")
+    )
+
+    result = runner.invoke(app, ["cache-version"])
+
+    assert result.exit_code == 1
+
+
+def test_generic_error_reported(mocker: MockerFixture) -> None:
+    """Any other exception is surfaced as a CLI error with exit code 1"""
+    mocker.patch(
+        "json2vars_setter.cli.version_cache.main",
+        side_effect=RuntimeError("kaboom"),
+    )
+
+    result = runner.invoke(app, ["cache-version"])
+
+    assert result.exit_code == 1
+    # The error message is written to stderr via typer.echo(err=True) and names
+    # the command that failed.
+    assert "Error: Failed to execute cache-version" in result.stderr
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])

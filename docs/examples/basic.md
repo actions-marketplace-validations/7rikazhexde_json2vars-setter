@@ -43,11 +43,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables from JSON
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
 
@@ -74,11 +74,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables from JSON
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
 
@@ -92,10 +92,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -110,6 +110,10 @@ jobs:
 
 This example shows how to dynamically update your matrix JSON with the latest language versions.
 
+!!! tip "Runnable sample (green badge)"
+    Proven live as [`Sample - Dynamic Update`](https://github.com/7rikazhexde/json2vars-setter/actions/workflows/sample_dynamic_update.yml)
+    ([files](https://github.com/7rikazhexde/json2vars-setter/tree/main/examples/showcase/dynamic-update)).
+
 ```yaml
 name: Dynamic Matrix Update
 
@@ -123,11 +127,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables with dynamic update
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           update-matrix: 'true'
@@ -148,7 +152,7 @@ jobs:
 
     steps:
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -159,6 +163,10 @@ jobs:
 ## Version Caching Example
 
 This example demonstrates how to use the version caching feature to reduce API calls.
+
+!!! tip "Runnable sample (green badge)"
+    Proven live as [`Sample - Version Cache`](https://github.com/7rikazhexde/json2vars-setter/actions/workflows/sample_version_cache.yml)
+    ([files](https://github.com/7rikazhexde/json2vars-setter/tree/main/examples/showcase/version-cache)).
 
 ```yaml
 name: Cached Version Matrix
@@ -172,11 +180,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables with cached versions
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           use-cache: 'true'
@@ -205,11 +213,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables from custom JSON
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/python_project_matrix.json
 
@@ -252,11 +260,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables from JSON
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
 
@@ -269,7 +277,7 @@ jobs:
 
     steps:
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -287,7 +295,7 @@ jobs:
 
     steps:
       - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -313,14 +321,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Update matrix.json
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           update-matrix: 'true'
-          all: 'stable'  # Use stable versions for all languages
+          update-strategy: 'stable'  # Use stable versions for all languages
 
       - name: Commit changes
         run: |

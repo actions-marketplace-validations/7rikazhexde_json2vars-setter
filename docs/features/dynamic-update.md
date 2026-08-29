@@ -1,6 +1,6 @@
 # Dynamic Matrix Update
 
-The Dynamic Matrix Updater (`update_matrix_dynamic.py`) automatically updates your matrix configuration with the latest or stable language versions from official sources.
+The Dynamic Matrix Updater (`matrix_update.py`) automatically updates your matrix configuration with the latest or stable language versions from official sources.
 
 ## Overview
 
@@ -11,7 +11,7 @@ graph TD
     Start[json2vars-setter Action] -->|Input Parameters| Condition{update-matrix?}
 
     %% False path - direct JSON parsing
-    Condition -->|false| G[json_to_github_output.py]
+    Condition -->|false| G[github_output.py]
 
     %% True path - update then parse
     Condition -->|true| Step1[Read JSON File<br>#40;If not specified, read in matrix.json#41;]
@@ -66,7 +66,7 @@ One of the key advantages is the ability to specify different update strategies 
 ```yaml
 - name: Set variables from dynamically updated JSON
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
@@ -82,11 +82,11 @@ Test your update strategies without modifying your JSON file using the dry-run o
 ```yaml
 - name: Test dynamic update without changing files
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
-    all: 'latest'
+    update-strategy: 'latest'
     dry-run: 'true'
 ```
 
@@ -111,15 +111,15 @@ jobs:
       versions_python: ${{ steps.json2vars.outputs.versions_python }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables with dynamic update
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           update-matrix: 'true'
-          all: 'latest'
+          update-strategy: 'latest'
 
       # Use the outputs directly
       - name: Display matrix info
@@ -135,7 +135,7 @@ You can mix and match update strategies for different languages:
 ```yaml
 - name: Set variables with mixed update strategies
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
@@ -160,14 +160,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Update matrix.json
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           update-matrix: 'true'
-          all: 'stable'
+          update-strategy: 'stable'
 
       - name: Commit changes
         run: |
@@ -192,6 +192,23 @@ The Dynamic Matrix Updater accepts the following inputs:
 | `ruby-strategy` | Strategy for Ruby versions | No | - |
 | `go-strategy` | Strategy for Go versions | No | - |
 | `rust-strategy` | Strategy for Rust versions | No | - |
+| `php-strategy` | Strategy for PHP versions | No | - |
+| `dotnet-strategy` | Strategy for .NET (C#) versions | No | - |
+| `java-strategy` | Strategy for Java versions | No | - |
+| `deno-strategy` | Strategy for Deno versions | No | - |
+| `bun-strategy` | Strategy for Bun versions | No | - |
+| `zig-strategy` | Strategy for Zig versions | No | - |
+| `elixir-strategy` | Strategy for Elixir versions | No | - |
+| `dart-strategy` | Strategy for Dart versions | No | - |
+| `swift-strategy` | Strategy for Swift versions | No | - |
+| `julia-strategy` | Strategy for Julia versions | No | - |
+| `crystal-strategy` | Strategy for Crystal versions | No | - |
+| `haskell-strategy` | Strategy for Haskell (GHC) versions | No | - |
+| `ocaml-strategy` | Strategy for OCaml versions | No | - |
+| `kotlin-strategy` | Strategy for Kotlin versions | No | - |
+| `clang-strategy` | Strategy for Clang/LLVM versions | No | - |
+| `gcc-strategy` | Strategy for GCC versions | No | - |
+| `flutter-strategy` | Strategy for Flutter versions | No | - |
 | `dry-run` | Run without updating the file | No | `'false'` |
 
 ## How It Works
@@ -203,15 +220,15 @@ When you set `update-matrix: 'true'`, the action performs these steps internally
 3. **Apply Update Strategy**: Versions are filtered based on the specified strategy for each language
 4. **Create a Backup**: Before making changes, a backup of the original file is created (unless in dry-run mode)
 5. **Update the Matrix**: The JSON file is updated with the new version information
-6. **Parse JSON**: The updated JSON file is processed by json_to_github_output.py
+6. **Parse JSON**: The updated JSON file is processed by github_output.py
 7. **Set Outputs**: The values from the JSON file are set as GitHub Actions outputs
 
 ```mermaid
 sequenceDiagram
     participant Workflow as GitHub Workflow
     participant Action as json2vars-setter
-    participant Updater as update_matrix_dynamic.py
-    participant Parser as json_to_github_output.py
+    participant Updater as matrix_update.py
+    participant Parser as github_output.py
     participant API as Language APIs
     participant File as matrix.json
 
@@ -242,6 +259,23 @@ The Dynamic Matrix Updater currently supports:
 - **Ruby**: Fetches from Ruby releases via GitHub API
 - **Go**: Fetches from Go releases via GitHub API
 - **Rust**: Fetches from Rust releases via GitHub API
+- **PHP**: Fetches from PHP releases via GitHub API
+- **.NET (C#)**: Fetches from .NET SDK releases via GitHub API
+- **Java**: Fetches from the Adoptium API (latest feature release / latest LTS)
+- **Deno**: Fetches from Deno releases via GitHub API
+- **Bun**: Fetches from Bun releases via GitHub API
+- **Zig**: Fetches from Zig releases via GitHub API
+- **Elixir**: Fetches from Elixir releases via GitHub API
+- **Dart**: Fetches from the Dart SDK release archive
+- **Swift**: Fetches from the swift.org install API
+- **Julia**: Fetches from Julia releases via GitHub API
+- **Crystal**: Fetches from Crystal releases via GitHub API
+- **Haskell**: Fetches from GHC releases via GitHub API
+- **OCaml**: Fetches from OCaml releases via GitHub API
+- **Kotlin**: Fetches from Kotlin releases via GitHub API (JetBrains/kotlin)
+- **Clang**: Fetches from LLVM releases via GitHub API (llvm/llvm-project)
+- **GCC**: Fetches from GCC releases via GitHub API (gcc-mirror/gcc)
+- **Flutter**: Fetches from the official Flutter release manifest (stable channel)
 
 ## Best Practices
 

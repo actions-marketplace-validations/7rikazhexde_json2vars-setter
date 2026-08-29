@@ -1,0 +1,319 @@
+import json
+import os
+import platform
+import subprocess
+from pathlib import Path
+from typing import Dict
+
+import pytest
+from _pytest.monkeypatch import MonkeyPatch
+
+from json2vars_setter.features.github_output import (
+    main,
+    parse_json,
+    print_output_summary,
+    set_github_output,
+)
+from json2vars_setter.version.core.utils import JsonObject
+
+MATRIX_JSON_PATH = "./tests/python_project_matrix.json"
+
+
+def _expected_from_json(data: object, prefix: str = "") -> Dict[str, str]:
+    """Derive the expected parse_json output from raw data.
+
+    Mirrors parse_json's flattening rules independently so that
+    test_parse_project_matrix_json stays self-maintaining: adding a version to
+    python_project_matrix.json requires no manual edit here.
+    Algorithm correctness (key naming, list serialisation, etc.) is covered by
+    test_parse_json_nested_list and test_parse_json_scalar_list_with_debug.
+    """
+    result: Dict[str, str] = {}
+    if isinstance(data, dict):
+        for key, value in data.items():
+            child_prefix = prefix + key.upper() + "_"
+            if isinstance(value, (dict, list)):
+                result.update(_expected_from_json(value, child_prefix))
+            else:
+                result[prefix + key.upper()] = str(value)
+    elif isinstance(data, list):
+        result[prefix[:-1]] = json.dumps(data)
+        for i, item in enumerate(data):
+            if isinstance(item, dict):
+                result.update(_expected_from_json(item, f"{prefix}{i}_"))
+            else:
+                result[f"{prefix}{i}"] = str(item)
+    return result
+
+
+# --- Test case for parse_json() ---
+
+
+def test_parse_project_matrix_json() -> None:
+    """parse_json on python_project_matrix.json matches the expected flattened structure.
+
+    Expected outputs are derived from the JSON file itself via _expected_from_json,
+    so this test stays green when versions are added to the fixture without any
+    manual update.
+    """
+    with open(MATRIX_JSON_PATH, "r") as f:
+        data = json.load(f)
+
+    expected_outputs = _expected_from_json(data)
+    outputs = parse_json(data)
+    assert outputs == expected_outputs
+
+
+def test_empty_json() -> None:
+    """Test empty JSON data with parse_json"""
+    data: JsonObject = {}
+    expected_outputs: Dict[str, str] = {}
+    outputs = parse_json(data)
+    assert outputs == expected_outputs
+
+
+def test_invalid_data_type() -> None:
+    """Test exceptions when invalid data types are passed"""
+    data: object = "invalid_type"
+    with pytest.raises(TypeError):
+        parse_json(data)
+
+
+def test_parse_json_nested_list() -> None:
+    """Test JSON data in nested list structure with parse_json"""
+    data = [{"key": "value"}]
+    expected_outputs = {"": '[{"key": "value"}]', "0_KEY": "value"}
+
+    outputs = parse_json(data, debug=False)
+    assert outputs == expected_outputs
+
+
+def test_parse_json_scalar_list_with_debug(capsys: pytest.CaptureFixture[str]) -> None:
+    """Test a top-level scalar list with debug enabled.
+
+    Covers the debug-print branches for both the serialized list and each
+    individual scalar item.
+    """
+    data = ["a", "b"]
+    expected_outputs = {"": '["a", "b"]', "0": "a", "1": "b"}
+
+    outputs = parse_json(data, debug=True)
+    assert outputs == expected_outputs
+
+    captured = capsys.readouterr()
+    assert "Debug: Parsed list '' value='[\"a\", \"b\"]'" in captured.out
+    assert "Debug: Parsed list item '0' value='a'" in captured.out
+    assert "Debug: Parsed list item '1' value='b'" in captured.out
+
+
+# --- Test case for print_output_summary() ---
+
+
+def test_print_output_summary_is_matrix_proportional(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The summary lists only the languages present in the matrix, not all of them."""
+    data = {
+        "os": ["ubuntu-latest", "macos-latest"],
+        "versions": {"python": ["3.13"], "nodejs": ["20"]},
+        "ghpages_branch": "gh-pages",
+    }
+    print_output_summary(data)
+
+    out = capsys.readouterr().out
+    assert "Outputs summary:" in out
+    assert '  os: ["ubuntu-latest", "macos-latest"]' in out
+    assert '  python versions: ["3.13"]' in out
+    assert '  nodejs versions: ["20"]' in out
+    assert "  ghpages_branch: gh-pages" in out
+    # Languages absent from the matrix must not appear in the log.
+    assert "ruby" not in out
+    assert "go versions" not in out
+
+
+def test_print_output_summary_ignores_non_dict(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A non-dict top-level payload prints nothing (no summary)."""
+    print_output_summary(["a", "b"])
+    assert capsys.readouterr().out == ""
+
+
+def test_main_prints_matrix_proportional_summary(
+    monkeypatch: MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Running main() prints the proportional summary for the matrix's languages."""
+    output_file = tmp_path / "GITHUB_OUTPUT"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output_file))
+
+    main([MATRIX_JSON_PATH])
+
+    out = capsys.readouterr().out
+    assert "Outputs summary:" in out
+    assert "python versions:" in out
+    # python_project_matrix.json carries no Kotlin entry, so it must not be logged.
+    assert "kotlin" not in out
+
+
+# --- Test case for set_github_output() ---
+
+
+def test_set_github_output(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    """Test if output is written correctly using set_github_output"""
+    output_file = tmp_path / "GITHUB_OUTPUT"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output_file))
+
+    outputs = {"TEST_OUTPUT": "test_value"}
+    set_github_output(outputs, debug=True)
+
+    with open(output_file, "r") as f:
+        lines = f.readlines()
+
+    assert "TEST_OUTPUT=test_value\n" in lines
+
+
+def test_github_output_not_set(monkeypatch: MonkeyPatch) -> None:
+    """Test if sys.exit(1) occurs when GITHUB_OUTPUT is not set"""
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    with pytest.raises(SystemExit) as excinfo:
+        set_github_output({"TEST_OUTPUT": "test"}, debug=False)
+    assert excinfo.value.code == 1
+
+
+def test_set_github_output_without_debug(
+    monkeypatch: MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test that debug messages are not output when debug=False"""
+    github_output_file = tmp_path / "GITHUB_OUTPUT"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(github_output_file))
+
+    outputs = {"TEST_OUTPUT": "test_value"}
+    set_github_output(outputs, debug=False)
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+
+
+# --- Test cases with sub-processes ---
+
+
+def test_main_execution_with_project_matrix_json(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    """Test executing a script in a sub-process using matrix.json"""
+    github_output_file = tmp_path / "GITHUB_OUTPUT"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(github_output_file))
+
+    # Script Execution
+    result = subprocess.run(
+        [
+            "python",
+            "json2vars_setter/features/github_output.py",
+            MATRIX_JSON_PATH,
+            "--debug",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert "Written to GITHUB_OUTPUT" in result.stdout
+
+
+def test_windows_path_handling(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    """Test handling of Windows-style paths"""
+    # Normalize path using platform-specific separator
+    output_file = os.path.normpath(os.path.join(str(tmp_path), "GITHUB_OUTPUT"))
+
+    # Create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    # Create empty file
+    with open(output_file, "w") as f:
+        pass
+
+    monkeypatch.setenv("GITHUB_OUTPUT", output_file)
+
+    # Test with Windows-specific data
+    test_data = {
+        "PATH": os.path.normpath("C:/Program Files/Python"),
+        "NESTED": {"SUB_PATH": os.path.normpath("D:/data/test")},
+    }
+
+    outputs = parse_json(test_data, debug=True)
+    set_github_output(outputs, debug=True)
+
+    with open(output_file, "r") as f:
+        content = f.read()
+
+    expected_path = os.path.normpath("C:/Program Files/Python")
+    expected_sub_path = os.path.normpath("D:/data/test")
+
+    assert f"PATH={expected_path}\n" in content
+    assert f"NESTED_SUB_PATH={expected_sub_path}\n" in content
+
+
+# Windows特有のテストをプラットフォームに関係なく実行するために修正
+# @pytest.mark.skipif(platform.system() != "Windows", reason="Windows-specific test")
+def test_windows_environment_vars(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    """Test Windows-specific environment variable handling"""
+    # モックするためにWindows固有の部分を一般化
+    output_file = os.path.normpath(os.path.join(str(tmp_path), "GITHUB_OUTPUT"))
+
+    # Create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    # Create empty file
+    with open(output_file, "w") as f:
+        pass
+
+    monkeypatch.setenv("GITHUB_OUTPUT", output_file)
+    monkeypatch.setenv("TEMP", str(tmp_path))
+
+    # プラットフォームに依存しない方法でテストデータを作成
+    temp_path = "%TEMP%/test"
+    mixed_path = "C:/Program Files/Python"
+
+    if platform.system() != "Windows":
+        # Windowsでない場合でも正規化を行う
+        temp_path = temp_path.replace("\\", "/")
+        mixed_path = mixed_path.replace("\\", "/")
+
+    test_data = {
+        "WINDOWS_VAR": os.path.normpath(temp_path),
+        "MIXED_PATH": os.path.normpath(mixed_path),
+    }
+
+    outputs = parse_json(test_data)
+    set_github_output(outputs, debug=False)
+
+    with open(output_file, "r") as f:
+        content = f.read()
+
+    expected_temp_path = os.path.normpath(temp_path)
+    expected_mixed_path = os.path.normpath(mixed_path)
+
+    assert f"WINDOWS_VAR={expected_temp_path}\n" in content
+    assert f"MIXED_PATH={expected_mixed_path}\n" in content
+
+
+def test_empty_file_handling(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    """Test handling of empty files"""
+    output_file = os.path.normpath(os.path.join(str(tmp_path), "GITHUB_OUTPUT"))
+
+    # Create the directory if it doesn't exist
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    # Create empty file
+    with open(output_file, "w") as f:
+        pass
+
+    monkeypatch.setenv("GITHUB_OUTPUT", output_file)
+
+    outputs = {"TEST": "value"}
+    set_github_output(outputs, debug=False)
+
+    with open(output_file, "r") as f:
+        content = f.read()
+
+    assert "TEST=value\n" in content

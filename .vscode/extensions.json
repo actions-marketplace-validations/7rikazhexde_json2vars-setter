@@ -1,0 +1,25 @@
+{
+    // Recommended extensions for developing this repository (the Python action,
+    // its docs, and workflows). Well-known, trusted publishers only. Example
+    // projects under examples/<lang>/ are illustrative; install the relevant
+    // language extension yourself if you edit one — they are intentionally not
+    // recommended here to keep the workspace lean.
+    "recommendations": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "DavidAnson.vscode-markdownlint",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml",
+        "github.vscode-github-actions",
+        "timonwong.shellcheck"
+    ],
+    // Discourage extensions that overlap/conflict with the project's chosen
+    // tooling (Ruff replaces Black/isort/Flake8/Pylint for this repo).
+    "unwantedRecommendations": [
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "ms-python.flake8",
+        "ms-python.pylint"
+    ]
+}

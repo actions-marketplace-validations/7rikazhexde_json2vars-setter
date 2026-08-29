@@ -26,11 +26,11 @@ jobs:
       matrix_updated: ${{ steps.check_changes.outputs.updated }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Update matrix configuration
         id: update_matrix
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           update-matrix: 'true'
@@ -60,11 +60,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables from JSON
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
 
@@ -80,10 +80,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -103,11 +103,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       # Apply matrix updates again since they were not committed yet
       - name: Update matrix configuration
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           update-matrix: 'true'
@@ -159,6 +159,12 @@ jobs:
 
 This example demonstrates using different configurations for development and production environments. This is particularly useful for teams that want to test extensively in production while keeping development iterations quick.
 
+!!! tip "Runnable sample (green badge)"
+    The same "pick the matrix by context" idea runs live as
+    [`Sample - Conditional Matrix`](https://github.com/7rikazhexde/json2vars-setter/actions/workflows/sample_conditional_matrix.yml)
+    ([files](https://github.com/7rikazhexde/json2vars-setter/tree/main/examples/showcase/conditional)):
+    a light matrix on pull requests and the full cross-OS matrix on schedule / dispatch.
+
 ```yaml
 name: Environment-Specific Testing
 
@@ -176,7 +182,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Determine environment
         id: environment
@@ -190,18 +196,18 @@ jobs:
       - name: Set variables for production
         id: json2vars_prod
         if: steps.environment.outputs.env == 'production'
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/production_matrix.json
 
       - name: Set variables for development
         id: json2vars_dev
         if: steps.environment.outputs.env == 'development'
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/development_matrix.json
           update-matrix: 'true'
-          all: 'latest'
+          update-strategy: 'latest'
 
       - name: Set matrix configuration
         id: matrix_config
@@ -220,10 +226,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -280,6 +286,12 @@ Example JSON configurations for different environments:
 
 This example shows an optimized approach for large projects with multiple languages, using caching to reduce API calls. This is especially valuable for repositories that need to test against many language versions but want to minimize external API requests.
 
+!!! tip "Runnable sample (green badge)"
+    See the caching hot path proven live in
+    [`Sample - Version Cache`](https://github.com/7rikazhexde/json2vars-setter/actions/workflows/sample_version_cache.yml)
+    ([files](https://github.com/7rikazhexde/json2vars-setter/tree/main/examples/showcase/version-cache)):
+    a multi-version matrix built from a committed cache with **zero API calls** on a cache hit.
+
 ```yaml
 name: Multi-Language Project CI
 
@@ -295,10 +307,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Update version cache
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           use-cache: 'true'
@@ -327,11 +339,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables from cache
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           use-cache: 'true'
@@ -348,9 +360,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run Python tests
@@ -366,9 +378,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
       - name: Run Node.js tests
@@ -384,6 +396,12 @@ jobs:
 
 This example demonstrates a dedicated maintenance workflow that runs on a schedule to keep your matrix configuration up-to-date. By separating this into its own workflow, you can avoid unnecessary updates during normal development cycles.
 
+!!! tip "Runnable sample (green badge)"
+    A side-effect-free version of this pattern runs weekly in this repository:
+    [`Sample - Dynamic Update`](https://github.com/7rikazhexde/json2vars-setter/actions/workflows/sample_dynamic_update.yml)
+    ([files](https://github.com/7rikazhexde/json2vars-setter/tree/main/examples/showcase/dynamic-update)).
+    It fetches the latest stable versions and rebuilds the matrix without committing — copy it, then add the commit/PR step below.
+
 ```yaml
 name: Matrix Maintenance
 
@@ -397,12 +415,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
       - name: Update version cache
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/matrix.json
           use-cache: 'true'
@@ -412,11 +430,11 @@ jobs:
           keep-existing: 'true'
 
       - name: Update dynamic versions
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: .github/json2vars-setter/sample/latest_matrix.json
           update-matrix: 'true'
-          all: 'latest'
+          update-strategy: 'latest'
 
       - name: Commit updated files
         run: |
@@ -432,6 +450,12 @@ jobs:
 ## Monorepo Project Configuration
 
 This example demonstrates how to handle multiple projects in a monorepo, each with their own language requirements. This approach is ideal for organizations that maintain multiple independent projects in a single repository.
+
+!!! tip "Runnable sample (green badge)"
+    A minimal version runs live as
+    [`Sample - Monorepo`](https://github.com/7rikazhexde/json2vars-setter/actions/workflows/sample_monorepo.yml)
+    ([files](https://github.com/7rikazhexde/json2vars-setter/tree/main/examples/showcase/monorepo)):
+    a Python backend and a Node.js frontend, each with its own matrix JSON and independent test matrix.
 
 ```yaml
 name: Monorepo CI
@@ -455,7 +479,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Check for changes
         uses: dorny/paths-filter@v2
@@ -477,11 +501,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables for Project A
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: project-a/.github/matrix.json
           use-cache: 'true'
@@ -498,10 +522,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -521,11 +545,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set variables for Project B
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: project-b/.github/matrix.json
           use-cache: 'true'
@@ -542,10 +566,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
 

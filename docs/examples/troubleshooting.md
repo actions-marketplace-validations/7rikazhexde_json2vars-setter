@@ -17,7 +17,7 @@ This guide helps you diagnose and resolve common issues when using the JSON to V
 ```yaml
 - name: Set variables with authentication
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
@@ -38,12 +38,12 @@ This guide helps you diagnose and resolve common issues when using the JSON to V
           ```yaml
           # Incorrect - missing id
           - name: Set variables from JSON
-            uses: 7rikazhexde/json2vars-setter@v1.0.2
+            uses: 7rikazhexde/json2vars-setter@v1.13.0
 
           # Correct
           - name: Set variables from JSON
             id: json2vars  # This is required to reference outputs
-            uses: 7rikazhexde/json2vars-setter@v1.0.2
+            uses: 7rikazhexde/json2vars-setter@v1.13.0
           ```
 
     2. **JSON structure issue**:
@@ -112,7 +112,7 @@ This guide helps you diagnose and resolve common issues when using the JSON to V
 
         ```yaml
         - name: Force cache update
-          uses: 7rikazhexde/json2vars-setter@v1.0.2
+          uses: 7rikazhexde/json2vars-setter@v1.13.0
           with:
             json-file: .github/json2vars-setter/sample/matrix.json
             use-cache: 'true'
@@ -149,7 +149,7 @@ This guide helps you diagnose and resolve common issues when using the JSON to V
     ```yaml
     # Incorrect - conflicting strategies
     - name: Set variables
-      uses: 7rikazhexde/json2vars-setter@v1.0.2
+      uses: 7rikazhexde/json2vars-setter@v1.13.0
       with:
         json-file: .github/json2vars-setter/sample/matrix.json
         update-matrix: 'true'
@@ -157,7 +157,7 @@ This guide helps you diagnose and resolve common issues when using the JSON to V
 
     # Correct - choose one strategy
     - name: Set variables with dynamic update
-      uses: 7rikazhexde/json2vars-setter@v1.0.2
+      uses: 7rikazhexde/json2vars-setter@v1.13.0
       with:
         json-file: .github/json2vars-setter/sample/matrix.json
         update-matrix: 'true'
@@ -172,7 +172,7 @@ Add the `--verbose` flag to see detailed logs:
 ```yaml
 - name: Debug cache version info
   run: |
-    python ${{ github.action_path }}/json2vars_setter/cache_version_info.py --verbose
+    python ${{ github.action_path }}/json2vars_setter/features/version_cache.py --verbose
 ```
 
 Or use the built-in debug output:
@@ -180,23 +180,24 @@ Or use the built-in debug output:
 ```yaml
 - name: Set variables with debug
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
-    verbose: 'true'  # Enable verbose logging
+    # Verbose debug logging is always emitted by the action (no input needed)
 ```
 
 ### Test Configurations Locally
 
-You can test the scripts locally before using them in GitHub Actions:
+You can run the same engines locally with the `json2vars` CLI before using them in
+GitHub Actions (in a clone, prefix with `uv run`):
 
 ```bash
-# Test cache_version_info.py
-python path/to/cache_version_info.py --template-only --verbose
+# Version cache (the engine behind the caching feature)
+json2vars cache-version --template-only --verbose
 
-# Test update_matrix_dynamic.py
-python path/to/update_matrix_dynamic.py --json-file ./matrix.json --all stable --dry-run
+# Matrix update (the engine behind the dynamic-update feature)
+json2vars update-matrix --json-file ./matrix.json --all stable --dry-run
 ```
 
 ### Inspect Generated Files
@@ -286,7 +287,7 @@ Choose a JSON file dynamically based on context:
 
 - name: Set variables from dynamic path
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: ${{ steps.config_file.outputs.file }}
 ```
@@ -309,11 +310,11 @@ Select update strategy based on specific conditions:
 
 - name: Set variables
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: ${{ steps.strategy.outputs.update }}
-    all: ${{ steps.strategy.outputs.strategy }}
+    update-strategy: ${{ steps.strategy.outputs.strategy }}
 ```
 
 ## GitHub API Rate Limit Management
@@ -329,7 +330,7 @@ Use GitHub authentication to increase API rate limits:
 
 - name: Set variables with authentication
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
@@ -345,7 +346,7 @@ Optimize your workflow to reduce API calls:
 
     ```yaml
     - name: Set variables with caching
-      uses: 7rikazhexde/json2vars-setter@v1.0.2
+      uses: 7rikazhexde/json2vars-setter@v1.13.0
       with:
         json-file: .github/json2vars-setter/sample/matrix.json
         use-cache: 'true'
@@ -356,7 +357,7 @@ Optimize your workflow to reduce API calls:
 
     ```yaml
     - name: Set variables from cache
-      uses: 7rikazhexde/json2vars-setter@v1.0.2
+      uses: 7rikazhexde/json2vars-setter@v1.13.0
       with:
         json-file: .github/json2vars-setter/sample/matrix.json
         use-cache: 'true'
@@ -377,7 +378,7 @@ Keep a comprehensive version history while minimizing API usage:
 
 ```yaml
 - name: Update cache incrementally
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     use-cache: 'true'

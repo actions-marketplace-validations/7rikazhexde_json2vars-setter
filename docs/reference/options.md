@@ -21,6 +21,23 @@ This page provides a comprehensive reference for all configuration options avail
 | `ruby-strategy` | Update strategy for Ruby versions | ✗ | - | Same valid values as `update-strategy` |
 | `go-strategy` | Update strategy for Go versions | ✗ | - | Same valid values as `update-strategy` |
 | `rust-strategy` | Update strategy for Rust versions | ✗ | - | Same valid values as `update-strategy` |
+| `php-strategy` | Update strategy for PHP versions | ✗ | - | Same valid values as `update-strategy` |
+| `dotnet-strategy` | Update strategy for .NET (C#) versions | ✗ | - | Same valid values as `update-strategy` |
+| `java-strategy` | Update strategy for Java versions | ✗ | - | Same valid values as `update-strategy` |
+| `deno-strategy` | Update strategy for Deno versions | ✗ | - | Same valid values as `update-strategy` |
+| `bun-strategy` | Update strategy for Bun versions | ✗ | - | Same valid values as `update-strategy` |
+| `zig-strategy` | Update strategy for Zig versions | ✗ | - | Same valid values as `update-strategy` |
+| `elixir-strategy` | Update strategy for Elixir versions | ✗ | - | Same valid values as `update-strategy` |
+| `dart-strategy` | Update strategy for Dart versions | ✗ | - | Same valid values as `update-strategy` |
+| `swift-strategy` | Update strategy for Swift versions | ✗ | - | Same valid values as `update-strategy` |
+| `julia-strategy` | Update strategy for Julia versions | ✗ | - | Same valid values as `update-strategy` |
+| `crystal-strategy` | Update strategy for Crystal versions | ✗ | - | Same valid values as `update-strategy` |
+| `haskell-strategy` | Update strategy for Haskell (GHC) versions | ✗ | - | Same valid values as `update-strategy` |
+| `ocaml-strategy` | Update strategy for OCaml versions | ✗ | - | Same valid values as `update-strategy` |
+| `kotlin-strategy` | Update strategy for Kotlin versions | ✗ | - | Same valid values as `update-strategy` |
+| `clang-strategy` | Update strategy for Clang/LLVM versions | ✗ | - | Same valid values as `update-strategy` |
+| `gcc-strategy` | Update strategy for GCC versions | ✗ | - | Same valid values as `update-strategy` |
+| `flutter-strategy` | Update strategy for Flutter versions | ✗ | - | Same valid values as `update-strategy` |
 | `dry-run` | Run in dry-run mode without updating the JSON file | ✗ | `false` | For testing update strategies |
 
 ### Cache Version Options
@@ -50,6 +67,23 @@ This page provides a comprehensive reference for all configuration options avail
 | `versions_nodejs` | List of Node.js versions | `["16", "18", "20"]` |
 | `versions_go` | List of Go versions | `["1.19", "1.20", "1.21"]` |
 | `versions_rust` | List of Rust versions | `["1.70.0", "1.71.0", "stable"]` |
+| `versions_php` | List of PHP versions | `["8.2.0", "8.3.0", "8.4.0"]` |
+| `versions_dotnet` | List of .NET (C#) versions | `["8.0.100", "9.0.100"]` |
+| `versions_java` | List of Java versions | `["21", "17", "11"]` |
+| `versions_deno` | List of Deno versions | `["2.1.4", "1.46.3"]` |
+| `versions_bun` | List of Bun versions | `["1.3.14", "1.2.23"]` |
+| `versions_zig` | List of Zig versions | `["0.15.2", "0.14.1"]` |
+| `versions_elixir` | List of Elixir versions | `["1.19.5", "1.18.4"]` |
+| `versions_dart` | List of Dart versions | `["3.12.1", "3.11.6"]` |
+| `versions_swift` | List of Swift versions | `["6.2.1", "6.1.3"]` |
+| `versions_julia` | List of Julia versions | `["1.11", "1.10"]` |
+| `versions_crystal` | List of Crystal versions | `["1.20.2", "1.19.2"]` |
+| `versions_haskell` | List of Haskell (GHC) versions | `["9.10.1", "9.8.4"]` |
+| `versions_ocaml` | List of OCaml versions | `["5.3.0", "5.2.1"]` |
+| `versions_kotlin` | List of Kotlin versions | `["2.4.0", "2.3.21"]` |
+| `versions_clang` | List of Clang/LLVM versions | `["20.1.8", "19.1.7"]` |
+| `versions_gcc` | List of GCC versions | `["15.1.0", "14.3.0"]` |
+| `versions_flutter` | List of Flutter versions | `["3.44.2", "3.41.9"]` |
 | `ghpages_branch` | GitHub Pages branch name | `"gh-pages"` |
 
 ## Usage Notes
@@ -86,7 +120,7 @@ Some input parameters have relationships or constraints:
 ```yaml
 - name: Set variables with dynamic update
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     update-matrix: 'true'
@@ -99,7 +133,7 @@ Some input parameters have relationships or constraints:
 ```yaml
 - name: Set variables with caching
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
     use-cache: 'true'
@@ -113,7 +147,7 @@ Some input parameters have relationships or constraints:
 ```yaml
 - name: Set variables from static JSON
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
 ```

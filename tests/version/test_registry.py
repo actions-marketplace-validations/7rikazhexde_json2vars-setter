@@ -1,0 +1,59 @@
+"""Tests for json2vars_setter.version.registry"""
+
+import pytest
+
+from json2vars_setter.version.fetchers.bun import BunVersionFetcher
+from json2vars_setter.version.fetchers.clang import ClangVersionFetcher
+from json2vars_setter.version.fetchers.crystal import CrystalVersionFetcher
+from json2vars_setter.version.fetchers.dart import DartVersionFetcher
+from json2vars_setter.version.fetchers.deno import DenoVersionFetcher
+from json2vars_setter.version.fetchers.dotnet import DotnetVersionFetcher
+from json2vars_setter.version.fetchers.elixir import ElixirVersionFetcher
+from json2vars_setter.version.fetchers.flutter import FlutterVersionFetcher
+from json2vars_setter.version.fetchers.gcc import GccVersionFetcher
+from json2vars_setter.version.fetchers.go import GoVersionFetcher
+from json2vars_setter.version.fetchers.haskell import HaskellVersionFetcher
+from json2vars_setter.version.fetchers.java import JavaVersionFetcher
+from json2vars_setter.version.fetchers.julia import JuliaVersionFetcher
+from json2vars_setter.version.fetchers.kotlin import KotlinVersionFetcher
+from json2vars_setter.version.fetchers.nodejs import NodejsVersionFetcher
+from json2vars_setter.version.fetchers.ocaml import OcamlVersionFetcher
+from json2vars_setter.version.fetchers.php import PhpVersionFetcher
+from json2vars_setter.version.fetchers.python import PythonVersionFetcher
+from json2vars_setter.version.fetchers.ruby import RubyVersionFetcher
+from json2vars_setter.version.fetchers.rust import RustVersionFetcher
+from json2vars_setter.version.fetchers.swift import SwiftVersionFetcher
+from json2vars_setter.version.fetchers.zig import ZigVersionFetcher
+from json2vars_setter.version.registry import get_version_fetcher
+
+
+def test_get_version_fetcher_returns_expected_type() -> None:
+    """get_version_fetcher returns the correct fetcher instance for each language"""
+    assert isinstance(get_version_fetcher("python"), PythonVersionFetcher)
+    assert isinstance(get_version_fetcher("nodejs"), NodejsVersionFetcher)
+    assert isinstance(get_version_fetcher("ruby"), RubyVersionFetcher)
+    assert isinstance(get_version_fetcher("go"), GoVersionFetcher)
+    assert isinstance(get_version_fetcher("rust"), RustVersionFetcher)
+    assert isinstance(get_version_fetcher("php"), PhpVersionFetcher)
+    assert isinstance(get_version_fetcher("dotnet"), DotnetVersionFetcher)
+    assert isinstance(get_version_fetcher("java"), JavaVersionFetcher)
+    assert isinstance(get_version_fetcher("deno"), DenoVersionFetcher)
+    assert isinstance(get_version_fetcher("bun"), BunVersionFetcher)
+    assert isinstance(get_version_fetcher("zig"), ZigVersionFetcher)
+    assert isinstance(get_version_fetcher("elixir"), ElixirVersionFetcher)
+    assert isinstance(get_version_fetcher("dart"), DartVersionFetcher)
+    assert isinstance(get_version_fetcher("swift"), SwiftVersionFetcher)
+    assert isinstance(get_version_fetcher("julia"), JuliaVersionFetcher)
+    assert isinstance(get_version_fetcher("crystal"), CrystalVersionFetcher)
+    assert isinstance(get_version_fetcher("haskell"), HaskellVersionFetcher)
+    assert isinstance(get_version_fetcher("ocaml"), OcamlVersionFetcher)
+    assert isinstance(get_version_fetcher("kotlin"), KotlinVersionFetcher)
+    assert isinstance(get_version_fetcher("clang"), ClangVersionFetcher)
+    assert isinstance(get_version_fetcher("gcc"), GccVersionFetcher)
+    assert isinstance(get_version_fetcher("flutter"), FlutterVersionFetcher)
+
+
+def test_get_version_fetcher_unsupported_language() -> None:
+    """get_version_fetcher raises ValueError for an unknown language"""
+    with pytest.raises(ValueError, match="Unsupported language: invalid"):
+        get_version_fetcher("invalid")

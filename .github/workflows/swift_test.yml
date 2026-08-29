@@ -1,0 +1,166 @@
+name: Swift Test
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - 'examples/swift/**'
+      - '.github/workflows/swift_test.yml'
+
+# Opt JavaScript actions into Node.js 24 (deprecation of Node 20 on runners).
+# Some pinned actions (szenius/set-timezone, mlugg/setup-zig, swift-actions/setup-swift)
+# have no Node 24 release yet; this forces them onto Node 24 per GitHub guidance.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
+jobs:
+  set_variables:
+    runs-on: ubuntu-latest
+    outputs:
+      os: ${{ steps.json2vars.outputs.os }}
+      versions_swift: ${{ steps.json2vars.outputs.versions_swift }}
+      ghpages_branch: ${{ steps.json2vars.outputs.ghpages_branch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set variables from JSON
+        id: json2vars
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
+        with:
+          json-file: examples/swift/swift_project_matrix.json
+
+      - name: Debug output values
+        run: |
+          echo "os: ${{ steps.json2vars.outputs.os }}"
+          echo "os[0]: ${{ fromJson(steps.json2vars.outputs.os)[0] }}"
+          echo "os[1]: ${{ fromJson(steps.json2vars.outputs.os)[1] }}"
+          echo "versions_swift: ${{ steps.json2vars.outputs.versions_swift }}"
+          echo "versions_swift[0]: ${{ fromJson(steps.json2vars.outputs.versions_swift)[0] }}"
+          echo "versions_swift[1]: ${{ fromJson(steps.json2vars.outputs.versions_swift)[1] }}"
+          echo "ghpages_branch: ${{ steps.json2vars.outputs.ghpages_branch }}"
+
+  run_tests:
+    needs: set_variables
+    strategy:
+      # Run every matrix combination even if one fails so the aggregated job
+      # result reflects the status of the whole matrix (used by the badge).
+      fail-fast: false
+      matrix:
+        os: ${{ fromJson(needs.set_variables.outputs.os) }}
+        swift-version: ${{ fromJson(needs.set_variables.outputs.versions_swift) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # WORKAROUND: swift-actions/setup-swift@v2.4.0 has a hardcoded version list
+      # ending at 6.2.1; versions 6.2.2+ and 6.3.x return "Version not available".
+      # The matrix uses 6.2 / 6.2.1 — the highest v2.4.0-supported releases that
+      # also work with the macOS 26 SDK (6.1.x fails: SDK built with Swift 6.3.2
+      # rejects older compilers). Update the matrix to version-cache stable/latest
+      # (currently 6.2.4 / 6.3.2) once setup-swift v3 stable releases (it uses
+      # Swiftly and supports any swift.org version dynamically).
+      # See: docs/reference/compatibility-notes.md — "Swift — versions capped at 6.2.1"
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a # v2.4.0
+        with:
+          swift-version: ${{ matrix.swift-version }}
+
+      - name: Set timezone
+        uses: szenius/set-timezone@1f9716b0f7120e344f0c62bb7b1ee98819aefd42 # v2.0
+        with:
+          timezoneLinux: "Asia/Tokyo"
+          timezoneMacos: "Asia/Tokyo"
+          timezoneWindows: "Tokyo Standard Time"
+
+      - name: Display Swift version
+        run: swift --version
+
+      - name: Show matrix
+        shell: bash
+        run: |
+          # For non-list case
+          ghpages_branch="${{ needs.set_variables.outputs.ghpages_branch }}"
+
+          # For list case, explicitly enclose the list in "" to make it a string. (Note that it is not ''.)
+          os='${{ needs.set_variables.outputs.os }}'
+          versions_swift='${{ needs.set_variables.outputs.versions_swift }}'
+
+          # For list index case
+          os_0="${{ fromJson(needs.set_variables.outputs.os)[0] }}"
+          os_1="${{ fromJson(needs.set_variables.outputs.os)[1] }}"
+
+          versions_swift_0="${{ fromJson(needs.set_variables.outputs.versions_swift)[0] }}"
+          versions_swift_1="${{ fromJson(needs.set_variables.outputs.versions_swift)[1] }}"
+
+          echo "os: ${os}"
+          echo "os_0: ${os_0}"
+          echo "os_1: ${os_1}"
+          echo "versions_swift: ${versions_swift}"
+          echo "versions_swift_0: ${versions_swift_0}"
+          echo "versions_swift_1: ${versions_swift_1}"
+          echo "ghpages_branch: ${ghpages_branch}"
+
+          # For loop case
+          os_list=$(echo "${os}" | jq -r '.[]' | tr '\n' ' ' | sed 's/ $//')
+          swift_versions_list=$(echo "${versions_swift}" | jq -r '.[]' | tr '\n' ' ' | sed 's/ $//')
+
+          for current_os in ${os_list}; do
+            for version in ${swift_versions_list}; do
+              echo "Current OS: ${current_os}, Current Swift Version: ${version}"
+            done
+          done
+
+      - name: Run tests
+        id: swift_test
+        working-directory: ./examples/swift
+        shell: bash
+        # Run directly (no output capture) so test output streams to the log
+        # in real time; the non-zero exit still fails this matrix leg.
+        run: |
+          swift test
+
+  update_badge:
+    needs: run_tests
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Determine status and color
+        id: status
+        shell: bash
+        run: |
+          # needs.run_tests.result aggregates every matrix combination:
+          # 'success' only when all passed, 'failure' if any leg failed.
+          case "${{ needs.run_tests.result }}" in
+            success)   status=passing;   color=2ea44f ;;
+            failure)   status=failing;   color=cf222e ;;
+            cancelled) status=cancelled; color=808080 ;;
+            skipped)   status=skipped;   color=808080 ;;
+            *)         status=pending;   color=dbab09 ;;
+          esac
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "color=$color" >> "$GITHUB_OUTPUT"
+
+      - name: Create badge
+        uses: schneegans/dynamic-badges-action@28b0fa8bdeb46170ac397105ece0c1fe58f68910 # v1.9.0
+        continue-on-error: true
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: c20279820e1c89d7864bf440e8c7cfa2
+          filename: swift-test-badge.json
+          label: Swift Test
+          message: ${{ steps.status.outputs.status }}
+          color: ${{ steps.status.outputs.color }}
+          labelColor: "24292f"
+          style: "flat"
+          namedLogo: "github"
+          logoColor: "white"

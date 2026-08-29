@@ -6,7 +6,16 @@ on:
       - 'main'
     paths:
       - 'examples/ruby/**'
-      - '.github/json2vars-setter/ruby_test.yml'
+      - '.github/workflows/ruby_test.yml'
+
+# Opt JavaScript actions into Node.js 24 (deprecation of Node 20 on runners).
+# Some pinned actions (szenius/set-timezone, mlugg/setup-zig, swift-actions/setup-swift)
+# have no Node 24 release yet; this forces them onto Node 24 per GitHub guidance.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
 
 jobs:
   set_variables:
@@ -17,13 +26,13 @@ jobs:
       ghpages_branch: ${{ steps.json2vars.outputs.ghpages_branch }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set variables from JSON
         id: json2vars
-        uses: 7rikazhexde/json2vars-setter@v1.0.2
+        uses: 7rikazhexde/json2vars-setter@v1.13.0
         with:
           json-file: examples/ruby/ruby_project_matrix.json
 
@@ -39,39 +48,43 @@ jobs:
           echo "versions_ruby[2]: ${{ fromJson(steps.json2vars.outputs.versions_ruby)[2] }}"
           echo "versions_ruby[3]: ${{ fromJson(steps.json2vars.outputs.versions_ruby)[3] }}"
           echo "versions_ruby[4]: ${{ fromJson(steps.json2vars.outputs.versions_ruby)[4] }}"
-          echo "versions_ruby[5]: ${{ fromJson(steps.json2vars.outputs.versions_ruby)[5] }}"
-          echo "versions_ruby[6]: ${{ fromJson(steps.json2vars.outputs.versions_ruby)[6] }}"
-          echo "versions_ruby[7]: ${{ fromJson(steps.json2vars.outputs.versions_ruby)[7] }}"
-          echo "versions_ruby[8]: ${{ fromJson(steps.json2vars.outputs.versions_ruby)[8] }}"
           echo "ghpages_branch: ${{ steps.json2vars.outputs.ghpages_branch }}"
 
   run_tests:
     needs: set_variables
     strategy:
+      # Run every matrix combination even if one fails so the aggregated job
+      # result reflects the status of the whole matrix (used by the badge).
+      fail-fast: false
       matrix:
         os: ${{ fromJson(needs.set_variables.outputs.os) }}
         ruby-version: ${{ fromJson(needs.set_variables.outputs.versions_ruby) }}
         exclude:
+          # WORKAROUND: Ruby 3.4.0 has a known build/runtime issue on Windows
+          # (native-extension / MSYS2 toolchain incompatibility) that was fixed in
+          # Ruby 3.4.1. The matrix JSON keeps 3.4.0 so the version is still tested
+          # on Linux and macOS; only the windows-latest leg is skipped.
+          # Remove this exclusion once 3.4.0 is confirmed fixed on Windows, or when
+          # 3.4.0 is dropped from ruby_project_matrix.json as stable moves forward.
+          # See: docs/reference/compatibility-notes.md — "Ruby — 3.4.0 excluded on windows-latest"
           - os: windows-latest
             ruby-version: '3.4.0'
     runs-on: ${{ matrix.os }}
-    outputs:
-      test_status: ${{ steps.set_status.outputs.status }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1.295.0
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
         with:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
           working-directory: './examples/ruby'
 
       - name: Set timezone
-        uses: szenius/set-timezone@v2.0
+        uses: szenius/set-timezone@1f9716b0f7120e344f0c62bb7b1ee98819aefd42 # v2.0
         with:
           timezoneLinux: "Asia/Tokyo"
           timezoneMacos: "Asia/Tokyo"
@@ -102,10 +115,6 @@ jobs:
           versions_ruby_2="${{ fromJson(needs.set_variables.outputs.versions_ruby)[2] }}"
           versions_ruby_3="${{ fromJson(needs.set_variables.outputs.versions_ruby)[3] }}"
           versions_ruby_4="${{ fromJson(needs.set_variables.outputs.versions_ruby)[4] }}"
-          versions_ruby_5="${{ fromJson(needs.set_variables.outputs.versions_ruby)[5] }}"
-          versions_ruby_6="${{ fromJson(needs.set_variables.outputs.versions_ruby)[6] }}"
-          versions_ruby_7="${{ fromJson(needs.set_variables.outputs.versions_ruby)[7] }}"
-          versions_ruby_8="${{ fromJson(needs.set_variables.outputs.versions_ruby)[8] }}"
 
           echo "os: ${os}"
           echo "os_0: ${os_0}"
@@ -117,10 +126,6 @@ jobs:
           echo "versions_ruby_2: ${versions_ruby_2}"
           echo "versions_ruby_3: ${versions_ruby_3}"
           echo "versions_ruby_4: ${versions_ruby_4}"
-          echo "versions_ruby_5: ${versions_ruby_5}"
-          echo "versions_ruby_6: ${versions_ruby_6}"
-          echo "versions_ruby_7: ${versions_ruby_7}"
-          echo "versions_ruby_8: ${versions_ruby_8}"
           echo "ghpages_branch: ${ghpages_branch}"
 
           # For loop case
@@ -136,59 +141,44 @@ jobs:
       - name: Run tests
         id: ruby_test
         working-directory: ./examples/ruby
-        continue-on-error: true
         shell: bash
+        # Run directly (no output capture) so test output streams to the log
+        # in real time; the non-zero exit still fails this matrix leg.
         run: |
           bundle install
-          output="$(bundle exec rake test)"
-          echo "${output}"
-
-      - name: Set test status
-        id: set_status
-        if: always()
-        shell: bash
-        run: |
-          if [ "${{ job.status }}" == "cancelled" ]; then
-            echo "status=cancelled" >> "$GITHUB_OUTPUT"
-          elif [ "${{ job.status }}" == "skipped" ]; then
-            echo "status=skipped" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.ruby_test.outcome }}" == "failure" ]; then
-            echo "status=failing" >> "$GITHUB_OUTPUT"
-          elif [ "${{ steps.ruby_test.outcome }}" == "success" ]; then
-            echo "status=passing" >> "$GITHUB_OUTPUT"
-          else
-            echo "status=pending" >> "$GITHUB_OUTPUT"
-          fi
+          bundle exec rake test
 
   update_badge:
     needs: run_tests
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Set color
-        id: set_color
+      - name: Determine status and color
+        id: status
         shell: bash
         run: |
-          status="${{ needs.run_tests.outputs.test_status }}"
-          if [ "$status" == "passing" ]; then
-            echo "color=2ea44f" >> "$GITHUB_OUTPUT"
-          elif [ "$status" == "failing" ]; then
-            echo "color=cf222e" >> "$GITHUB_OUTPUT"
-          elif [ "$status" == "pending" ]; then
-            echo "color=dbab09" >> "$GITHUB_OUTPUT"
-          else
-            echo "color=808080" >> "$GITHUB_OUTPUT"
-          fi
+          # needs.run_tests.result aggregates every matrix combination:
+          # 'success' only when all passed, 'failure' if any leg failed.
+          case "${{ needs.run_tests.result }}" in
+            success)   status=passing;   color=2ea44f ;;
+            failure)   status=failing;   color=cf222e ;;
+            cancelled) status=cancelled; color=808080 ;;
+            skipped)   status=skipped;   color=808080 ;;
+            *)         status=pending;   color=dbab09 ;;
+          esac
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "color=$color" >> "$GITHUB_OUTPUT"
 
       - name: Create badge
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@28b0fa8bdeb46170ac397105ece0c1fe58f68910 # v1.9.0
+        continue-on-error: true
         with:
           auth: ${{ secrets.GIST_TOKEN }}
           gistID: 511ba5b5711e66c507292ba00cf0a219
           filename: ruby-test-badge.json
           label: Ruby Test
-          message: ${{ needs.run_tests.outputs.test_status }}
-          color: ${{ steps.set_color.outputs.color }}
+          message: ${{ steps.status.outputs.status }}
+          color: ${{ steps.status.outputs.color }}
           labelColor: "24292f"
           style: "flat"
           namedLogo: "github"

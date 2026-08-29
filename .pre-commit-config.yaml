@@ -20,65 +20,103 @@ repos:
       # yaml syntax check
       - id: check-yaml
 
+  # https://github.com/abravalheri/validate-pyproject
+  # Validate pyproject.toml against the PEP 517/621 schema
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: '0.26'
+    hooks:
+      - id: validate-pyproject
+
+  # https://github.com/crate-ci/typos
+  # Source-code spell checker (config in pyproject.toml [tool.typos])
+  - repo: https://github.com/crate-ci/typos
+    rev: v1
+    hooks:
+      - id: typos
+
+  # NOTE: gitleaks secret scanning runs in CI only (.github/workflows/modern-quality.yml).
+  # It is intentionally NOT a pre-commit hook: the golang/OpenSSL-linked gitleaks
+  # binary fails to run on this Windows dev environment, and with fail_fast: true a
+  # broken hook would block every local commit.
+
   # https://github.com/shellcheck-py/shellcheck-py?tab=readme-ov-file#usage
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+    rev: v0.11.0.1-1
     hooks:
       - id: shellcheck
 
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.11
+    rev: v1.7.12
     hooks:
       - id: actionlint
 
-  # https://python-poetry.org/docs/pre-commit-hooks/#usage
-  - repo: https://github.com/python-poetry/poetry
-    # Cannot be executed with local designation (as of 24.8.3)
-    rev: 2.3.2
+  # https://github.com/astral-sh/uv-pre-commit
+  # Keep uv.lock in sync with pyproject.toml
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.12.7
     hooks:
-      - id: poetry-check
-        verbose: true
-      - id: poetry-lock
+      - id: uv-lock
         verbose: true
 
   # requirements.txt and requirements-dev.txt are updated and managed by Dependabot
+  # (regenerated from uv.lock via the update-requirements-after-dependabot workflow)
   #- repo: local
   #  hooks:
-  #    - id: poetry-export
+  #    - id: uv-export
   #      name: Export requirements.txt
-  #      entry: poetry export -f requirements.txt -o requirements.txt --without-hashes
-  #      language: python
+  #      entry: uv export --frozen --no-hashes --no-emit-project --no-dev -o requirements.txt
+  #      language: system
   #      pass_filenames: false
-  #      additional_dependencies:
-  #        - "poetry"
-  #        - "poetry-plugin-export"
-  #    - id: poetry-export-dev
+  #    - id: uv-export-dev
   #      name: Export dev requirements.txt
-  #      entry: poetry export --with dev -f requirements.txt -o requirements-dev.txt --without-hashes
-  #      language: python
+  #      entry: uv export --frozen --no-hashes --no-emit-project -o requirements-dev.txt
+  #      language: system
   #      pass_filenames: false
-  #      additional_dependencies:
-  #        - "poetry"
-  #        - "poetry-plugin-export"
 
   # Reference: https://github.com/DavidAnson/markdownlint-cli2#overview
   # > markdownlint-cli is a traditional command-line interface for markdownlint.
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.48.0
+    rev: v0.49.1
     hooks:
       - id: markdownlint
         args: ["--config", ".markdownlint.jsonc", "README.md"]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.15.8
+    rev: v0.16.5
     hooks:
       - id: ruff
         args: ["--fix","json2vars_setter"]
       - id: ruff-format
 
+  # Keep the action version refs in the docs/README usage examples in sync with
+  # the versions actually pinned in the real workflows (the source of truth that
+  # Dependabot maintains). Dependabot never edits Markdown, and sync-version-refs.sh
+  # only syncs the json2vars-setter self-reference, so this closes that gap.
+  - repo: local
+    hooks:
+      - id: sync-doc-action-refs
+        name: Sync doc action version refs to workflows
+        entry: python .github/scripts/sync_doc_action_refs.py
+        language: python
+        pass_filenames: false
+        files: '^(README\.md|docs/.*\.md|\.github/workflows/.*\.ya?ml|action\.yml)$'
+
+      - id: gen-language-docs
+        name: Generate per-language docs pages from matrix JSON + workflows
+        entry: python .github/scripts/gen_language_docs.py
+        language: python
+        pass_filenames: false
+        files: '^(examples/.*_project_matrix\.json|tests/python_project_matrix\.json|\.github/workflows/.*_test\.yml|\.github/json2vars-setter/cache/version_cache\.json|\.github/scripts/gen_language_docs\.py|docs/languages/.*\.md)$'
+
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+    rev: v2.3.1
     hooks:
       - id: mypy
-        additional_dependencies: [types-requests==2.32.0.20240622]
+        # Type stubs / typed libs the isolated hook env needs so mypy strict mode
+        # (disallow_untyped_decorators) can resolve typer/pytest decorators.
+        additional_dependencies:
+          - types-requests==2.33.0.20260518
+          - typer==0.26.4
+          - pytest==9.0.3
+          - pytest-mock==3.15.1
         args: [--config-file=pyproject.toml]

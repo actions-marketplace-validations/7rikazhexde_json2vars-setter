@@ -1,6 +1,6 @@
 # JSON to Variables
 
-The JSON to Variables Parser (`json_to_github_output.py`) is the core component of the json2vars-setter action. It reads a JSON configuration file and sets its values as output variables in GitHub Actions workflows.
+The JSON to Variables Parser (`github_output.py`) is the core component of the json2vars-setter action. It reads a JSON configuration file and sets its values as output variables in GitHub Actions workflows.
 
 ## Overview
 
@@ -8,7 +8,7 @@ This component serves as the foundation of the entire action, transforming stati
 
 ```mermaid
 graph LR
-    A[JSON File] -->|Read| B[json_to_github_output.py]
+    A[JSON File] -->|Read| B[github_output.py]
     B -->|Parse| C[Extract Values]
     C -->|Format| D[Set GitHub Outputs]
     D -->|Available in| E[Workflow Steps]
@@ -97,7 +97,7 @@ The parser generates these outputs:
 ```yaml
 - name: Set variables from JSON
   id: json2vars
-  uses: 7rikazhexde/json2vars-setter@v1.0.2
+  uses: 7rikazhexde/json2vars-setter@v1.13.0
   with:
     json-file: .github/json2vars-setter/sample/matrix.json
 ```
@@ -133,7 +133,7 @@ jobs:
     runs-on: ${{ fromJson(needs.set_variables.outputs.os)[0] }}
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ fromJson(needs.set_variables.outputs.versions_python)[0] }}
 ```
@@ -207,7 +207,7 @@ For direct access to specific array elements:
 
 ## Technical Details
 
-The `json_to_github_output.py` script:
+The `github_output.py` script:
 
 1. Accepts a JSON file path as input
 2. Uses Python's `json` module to parse the file
